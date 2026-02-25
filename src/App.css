@@ -1,57 +1,96 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 .App {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  background: #f5f7f9;
+  color: #222;
 }
 
-.App-header {
+.page-header {
+  background: #76d455;
+  padding: 18px 24px;
   text-align: center;
-  padding: 2rem;
+  border-bottom: 2px solid #67c447;
 }
 
-.App-header h1 {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  animation: fadeInDown 1s ease-in;
+.page-header h1 {
+  font-size: 28px;
+  font-weight: 700;
 }
 
-.App-header p {
-  font-size: 1.5rem;
-  opacity: 0.9;
-  animation: fadeInUp 1s ease-in;
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #0fb86b;
+  padding: 10px 12px;
+  gap: 10px;
+  border-bottom: 2px solid #0aa35e;
 }
 
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.tab {
+  border: none;
+  background: transparent;
+  color: #043d25;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 0.9;
-    transform: translateY(0);
-  }
+.tab.is-active {
+  background: #a7d86b;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.content {
+  background: white;
+  margin: 12px;
+  border-radius: 6px;
+  padding: 16px;
+  min-height: 480px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.search-row {
+  display: flex;
+  align-items: center;
+  background: #bdbdbd;
+  border-radius: 6px;
+  padding: 10px 12px;
+  gap: 10px;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: #2e2e2e;
+}
+
+.search-button {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #1f1f1f;
+  border-radius: 50%;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.card {
+  margin-top: 18px;
+  background: #d9d9d9;
+  border-radius: 6px;
+  padding: 18px 20px;
+  width: 220px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+  font-size: 20px;
+  display: grid;
+  gap: 14px;
 }
