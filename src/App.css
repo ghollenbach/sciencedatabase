@@ -18,7 +18,7 @@
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   background: #0fb86b;
   padding: 10px 12px;
   gap: 10px;
@@ -42,12 +42,38 @@
 }
 
 .content {
+  position: relative;
   background: white;
   margin: 12px;
   border-radius: 6px;
   padding: 16px;
   min-height: 480px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.toolbar h2 {
+  font-size: 22px;
+}
+
+.add-item-button {
+  border: none;
+  background: #0fb86b;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.add-item-button:hover {
+  background: #0aa35e;
 }
 
 .search-row {
@@ -83,6 +109,77 @@
   cursor: pointer;
 }
 
+.status-message {
+  margin-top: 12px;
+  color: #055d35;
+  font-weight: 600;
+}
+
+.add-form-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+}
+
+.add-form {
+  width: min(420px, 90%);
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+}
+
+.add-form h3 {
+  margin-bottom: 4px;
+}
+
+.add-form label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.add-form input,
+.add-form textarea {
+  border: 1px solid #cbcbcb;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 15px;
+}
+
+.form-actions {
+  margin-top: 6px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.form-actions button {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.form-actions .secondary {
+  background: #e5e7eb;
+}
+
+.form-actions .primary {
+  background: #0fb86b;
+  color: #fff;
+}
+
+.form-actions .primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .card {
   margin-top: 18px;
   background: #d9d9d9;
@@ -94,3 +191,105 @@
   display: grid;
   gap: 14px;
 }
+
+.items-list {
+  margin-top: 20px;
+}
+
+.item-card {
+  border: 1px solid #ddd;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+}
+
+.item-actions button {
+  margin-right: 8px;
+}
+
+.receipts-list {
+  margin-top: 20px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.no-receipts {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 20px;
+}
+
+.receipt-card {
+  border: 1px solid #e0e0e0;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.receipt-action {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.receipt-action.action-restock_requested {
+  background: #ffeaa7;
+  color: #d63031;
+}
+
+.receipt-action.action-pickup_confirmed {
+  background: #a8e6cf;
+  color: #27ae60;
+}
+
+.receipt-action.action-restock_completed {
+  background: #96ceb4;
+  color: #16a085;
+}
+
+.receipt-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.receipt-card p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.receipt-details {
+  margin-top: 8px;
+  padding: 8px;
+  background: #fff;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.receipt-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  color: #0fb86b;
+}
+
+.receipt-details pre {
+  margin: 8px 0 0 0;
+  font-size: 11px;
+  overflow-x: auto;
+  background: #f5f5f5;
+  padding: 6px;
+  border-radius: 3px;
+}
+

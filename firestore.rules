@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow all reads and writes (for testing)
+    // In production, restrict this based on authentication
+    match /inventoryItems/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
