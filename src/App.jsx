@@ -41,6 +41,11 @@ function App() {
   const [items, setItems] = useState([])
   const [receipts, setReceipts] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [filters, setFilters] = useState({
+    category: '',
+    department: '',
+    course: '',
+  })
   const [orderConfirmModal, setOrderConfirmModal] = useState({ isOpen: false, itemId: null, name: '' })
   const [pickupConfirmModal, setPickupConfirmModal] = useState({ isOpen: false, itemId: null, name: '' })
   const [requestMoreModal, setRequestMoreModal] = useState({ isOpen: false, itemId: null, itemName: '', quantity: '', requesterName: '' })
@@ -50,6 +55,10 @@ function App() {
     itemCount: '',
     category: '',
     cost: '',
+    department: '',
+    course: '',
+    storageLocation: '',
+    vendor: '',
     requestedBy: '',
     orderedBy: '',
     pickupConfirmedBy: '',
@@ -70,6 +79,10 @@ function App() {
       itemCount: '',
       category: '',
       cost: '',
+      department: '',
+      course: '',
+      storageLocation: '',
+      vendor: '',
       requestedBy: '',
       orderedBy: '',
       pickupConfirmedBy: '',
@@ -103,6 +116,10 @@ function App() {
         itemCount: countNumber,
         category: formData.category,
         cost: Number.isFinite(costNumber) ? costNumber : 0,
+        department: formData.department.trim(),
+        course: formData.course.trim(),
+        storageLocation: formData.storageLocation.trim(),
+        vendor: formData.vendor.trim(),
 
         requestedBy: formData.requestedBy.trim(),
         orderedBy: formData.orderedBy.trim(),
@@ -320,13 +337,21 @@ function App() {
       // Get the original item to copy unit price
       const originalItem = items.find((item) => item.id === requestMoreModal.itemId)
       const unitPrice = originalItem?.cost || 0
+      const originalDepartment = originalItem?.department || ''
+      const originalCourse = originalItem?.course || ''
+      const originalStorageLocation = originalItem?.storageLocation || ''
+      const originalVendor = originalItem?.vendor || ''
 
       // Create a new item in Want status, linked to original
-      const docRef = await addDoc(collection(db, 'inventoryItems'), {
+      await addDoc(collection(db, 'inventoryItems'), {
         itemName: requestMoreModal.itemName,
         itemCount: quantityNum,
         category: 'Restock',
         cost: unitPrice,
+        department: originalDepartment,
+        course: originalCourse,
+        storageLocation: originalStorageLocation,
+        vendor: originalVendor,
         status: 'Want',
         linkedItemId: requestMoreModal.itemId, // Link to original item
         requestedBy: requestMoreModal.requesterName.trim(),
@@ -354,6 +379,156 @@ function App() {
     }
   }
 
+  // Delete item (available in any non-Receipts tab)
+  const handleDeleteItem = async (itemId, itemName) => {
+    const confirmed = window.confirm(`Delete "${itemName}"? This cannot be undone.`)
+    if (!confirmed) return
+
+    try {
+      setIsSaving(true)
+      await deleteDoc(doc(db, 'inventoryItems', itemId))
+      await logActivity('ITEM_DELETED', itemId, itemName, {})
+      setMessage('Item deleted successfully.')
+    } catch (error) {
+      setMessage(getFirebaseWriteErrorMessage(error))
+      console.error('Firebase delete item error:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const escapeCsvValue = (value) => {
+    const stringValue = value == null ? '' : String(value)
+    return `"${stringValue.replace(/"/g, '""')}"`
+  }
+
+  const downloadCsv = (filename, headers, rows) => {
+    const csvLines = [headers.map(escapeCsvValue).join(',')]
+    rows.forEach((row) => {
+      csvLines.push(row.map(escapeCsvValue).join(','))
+    })
+
+    const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const filteredItems = items
+    .filter((item) => item.status === activeTab)
+    .filter((item) => {
+      const query = searchQuery.toLowerCase()
+      return (
+        item.itemName.toLowerCase().includes(query) ||
+        (item.category || '').toLowerCase().includes(query) ||
+        (item.department || '').toLowerCase().includes(query) ||
+        (item.course || '').toLowerCase().includes(query) ||
+        (item.storageLocation || '').toLowerCase().includes(query) ||
+        (item.vendor || '').toLowerCase().includes(query) ||
+        (item.requestedBy || '').toLowerCase().includes(query) ||
+        (item.orderedBy || '').toLowerCase().includes(query) ||
+        (item.notes || '').toLowerCase().includes(query)
+      )
+    })
+    .filter((item) => {
+      if (filters.category && item.category !== filters.category) return false
+      if (filters.department && item.department !== filters.department) return false
+      if (filters.course && item.course !== filters.course) return false
+      return true
+    })
+
+  const handleFilterChange = (event) => {
+    const { name, value } = event.target
+    setFilters((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const clearFilters = () => {
+    setFilters({
+      category: '',
+      department: '',
+      course: '',
+    })
+    setSearchQuery('')
+  }
+
+  const uniqueValues = (key) => {
+    const values = items
+      .map((item) => item[key])
+      .filter((value) => typeof value === 'string' && value.trim() !== '')
+    return [...new Set(values)].sort((a, b) => a.localeCompare(b))
+  }
+
+  const handleExportReport = () => {
+    if (activeTab === 'Receipts') {
+      if (!receipts.length) {
+        setMessage('No receipt data to export.')
+        return
+      }
+
+      const rows = receipts.map((receipt) => [
+        receipt.action || '',
+        receipt.itemName || '',
+        receipt.timestamp?.toDate?.().toLocaleString() || '',
+        JSON.stringify(receipt.details || {}),
+      ])
+
+      downloadCsv(
+        `science-inventory-receipts-${new Date().toISOString().slice(0, 10)}.csv`,
+        ['Action', 'Item Name', 'Timestamp', 'Details'],
+        rows
+      )
+      setMessage('Receipt report exported.')
+      return
+    }
+
+    if (!filteredItems.length) {
+      setMessage('No inventory data to export for current filters.')
+      return
+    }
+
+    const rows = filteredItems.map((item) => [
+      item.itemName,
+      item.itemCount,
+      item.category || '',
+      item.department || '',
+      item.course || '',
+      item.storageLocation || '',
+      item.vendor || '',
+      item.cost || 0,
+      (item.cost || 0) * (item.itemCount || 0),
+      item.requestedBy || '',
+      item.orderedBy || '',
+      item.pickupConfirmedBy || '',
+      item.notes || '',
+      item.status || '',
+    ])
+
+    downloadCsv(
+      `science-inventory-${activeTab.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`,
+      [
+        'Item Name',
+        'Quantity',
+        'Category',
+        'Department',
+        'Course',
+        'Storage Location',
+        'Vendor',
+        'Unit Price',
+        'Total Price',
+        'Requested By',
+        'Ordered By',
+        'Picked Up By',
+        'Teacher Notes',
+        'Status',
+      ],
+      rows
+    )
+    setMessage('Inventory report exported.')
+  }
+
   return (
     <div className="App">
       <header className="page-header">
@@ -377,9 +552,16 @@ function App() {
       <section className="content">
         <div className="toolbar">
           <h2>{activeTab} Items</h2>
-          <button className="add-item-button" type="button" onClick={() => setIsAddFormOpen(true)}>
-            + Add Item
-          </button>
+          <div className="toolbar-actions">
+            <button className="export-button" type="button" onClick={handleExportReport}>
+              Export Report
+            </button>
+            {activeTab !== 'Receipts' && (
+              <button className="add-item-button" type="button" onClick={() => setIsAddFormOpen(true)}>
+                + Add Item
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="search-row">
@@ -396,80 +578,144 @@ function App() {
           </button>
         </div>
 
+        {activeTab !== 'Receipts' && (
+          <div className="filters-row" aria-label="Item filters">
+            <select name="category" value={filters.category} onChange={handleFilterChange}>
+              <option value="">All Categories</option>
+              {uniqueValues('category').map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+
+            <select name="department" value={filters.department} onChange={handleFilterChange}>
+              <option value="">All Departments</option>
+              {uniqueValues('department').map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+
+            <select name="course" value={filters.course} onChange={handleFilterChange}>
+              <option value="">All Courses</option>
+              {uniqueValues('course').map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+
+            <button type="button" className="secondary" onClick={clearFilters}>
+              Clear Filters
+            </button>
+          </div>
+        )}
+
         {message && <p className="status-message">{message}</p>}
 
         {/* Display items */}
         {activeTab !== 'Receipts' && (
-        <div className="items-list">
-          {items
-            .filter((item) => item.status === activeTab)
-            .filter((item) => {
-              const query = searchQuery.toLowerCase()
-              return (
-                item.itemName.toLowerCase().includes(query) ||
-                (item.category || '').toLowerCase().includes(query) ||
-                (item.requestedBy || '').toLowerCase().includes(query) ||
-                (item.orderedBy || '').toLowerCase().includes(query) ||
-                (item.notes || '').toLowerCase().includes(query)
-              )
-            })
-            .map((item) => (
-              <div key={item.id} className="item-card">
-                <h3>{item.itemName}</h3>
-                <p>Quantity: {item.itemCount}</p>
-                <p>Category: {item.category || 'Uncategorized'}</p>
-                <p>Unit Price: ${(item.cost || 0).toFixed(2)}</p>
-                {(activeTab === 'Want' || activeTab === 'Ordered') && (
-                  <p>Total Price: ${((item.cost || 0) * item.itemCount).toFixed(2)}</p>
-                )}
+          <div className="items-list">
+            {filteredItems.length === 0 ? (
+              <p className="no-receipts">No items match current filters.</p>
+            ) : (
+              <div className="table-wrap">
+                <table className="items-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Qty</th>
+                      <th>Category</th>
+                      <th>Department</th>
+                      <th>Course</th>
+                      <th>Location</th>
+                      <th>Vendor</th>
+                      <th>Unit Price</th>
+                      {(activeTab === 'Want' || activeTab === 'Ordered') && <th>Total Price</th>}
+                      <th>Requested By</th>
+                      <th>Ordered By</th>
+                      <th>Picked Up By</th>
+                      <th>Teacher Notes</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredItems.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.itemName}</td>
+                        <td>{item.itemCount}</td>
+                        <td>{item.category || 'Uncategorized'}</td>
+                        <td>{item.department || 'Unspecified'}</td>
+                        <td>{item.course || 'Unspecified'}</td>
+                        <td>{item.storageLocation || 'Unspecified'}</td>
+                        <td>{item.vendor || 'Unspecified'}</td>
+                        <td>${(item.cost || 0).toFixed(2)}</td>
+                        {(activeTab === 'Want' || activeTab === 'Ordered') && (
+                          <td>${((item.cost || 0) * item.itemCount).toFixed(2)}</td>
+                        )}
+                        <td>{item.requestedBy || '-'}</td>
+                        <td>{item.orderedBy || '-'}</td>
+                        <td>{item.pickupConfirmedBy || '-'}</td>
+                        <td className="notes-cell">{item.notes || 'None'}</td>
+                        <td>
+                          <div className="row-actions">
+                            {activeTab === 'Current' && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setRequestMoreModal({
+                                    isOpen: true,
+                                    itemId: item.id,
+                                    itemName: item.itemName,
+                                    quantity: '',
+                                    requesterName: '',
+                                  })
+                                }
+                              >
+                                Request More
+                              </button>
+                            )}
 
-                {item.requestedBy && <p>Requested By: {item.requestedBy}</p>}
-                {item.orderedBy && <p>Ordered By: {item.orderedBy}</p>}
-                {item.pickupConfirmedBy && <p>Picked Up By: {item.pickupConfirmedBy}</p>}
+                            {activeTab === 'Want' && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setOrderConfirmModal({ isOpen: true, itemId: item.id, name: '' })
+                                }
+                              >
+                                Mark Ordered
+                              </button>
+                            )}
 
-                <p>Notes: {item.notes || 'None'}</p>
+                            {activeTab === 'Ordered' && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPickupConfirmModal({ isOpen: true, itemId: item.id, name: '' })
+                                }
+                              >
+                                Confirm Pickup
+                              </button>
+                            )}
 
-                {/* Actions */}
-                <div className="item-actions">
-                  {activeTab === 'Current' && (
-                    <button
-                      onClick={() =>
-                        setRequestMoreModal({
-                          isOpen: true,
-                          itemId: item.id,
-                          itemName: item.itemName,
-                          quantity: '',
-                          requesterName: '',
-                        })
-                      }
-                    >
-                      Request More
-                    </button>
-                  )}
-
-                  {activeTab === 'Want' && (
-                    <button
-                      onClick={() =>
-                        setOrderConfirmModal({ isOpen: true, itemId: item.id, name: '' })
-                      }
-                    >
-                      Mark Ordered
-                    </button>
-                  )}
-
-                  {activeTab === 'Ordered' && (
-                    <button
-                      onClick={() =>
-                        setPickupConfirmModal({ isOpen: true, itemId: item.id, name: '' })
-                      }
-                    >
-                      Confirm Pickup
-                    </button>
-                  )}
-                </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteItem(item.id, item.itemName)}
+                              disabled={isSaving}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
-        </div>
+            )}
+          </div>
         )}
 
         {/* Receipts tab */}
@@ -553,6 +799,46 @@ function App() {
                 onChange={handleChange}
               />
 
+              <label htmlFor="department">Department</label>
+              <input
+                id="department"
+                name="department"
+                type="text"
+                value={formData.department}
+                onChange={handleChange}
+                placeholder="e.g. Chemistry"
+              />
+
+              <label htmlFor="course">Course</label>
+              <input
+                id="course"
+                name="course"
+                type="text"
+                value={formData.course}
+                onChange={handleChange}
+                placeholder="e.g. Biology 101"
+              />
+
+              <label htmlFor="storageLocation">Storage Location</label>
+              <input
+                id="storageLocation"
+                name="storageLocation"
+                type="text"
+                value={formData.storageLocation}
+                onChange={handleChange}
+                placeholder="e.g. Lab Cabinet A"
+              />
+
+              <label htmlFor="vendor">Vendor</label>
+              <input
+                id="vendor"
+                name="vendor"
+                type="text"
+                value={formData.vendor}
+                onChange={handleChange}
+                placeholder="e.g. Fisher Scientific"
+              />
+
               <label htmlFor="requestedBy">Requested By</label>
               <input
                 id="requestedBy"
@@ -580,7 +866,7 @@ function App() {
                 onChange={handleChange}
               />
 
-              <label htmlFor="notes">Notes (Optional)</label>
+              <label htmlFor="notes">Teacher Notes (Optional)</label>
               <textarea
                 id="notes"
                 name="notes"
