@@ -111,6 +111,43 @@ function App() {
     try {
       setIsSaving(true)
 
+      const normalizedItemName = formData.itemName.trim().toLowerCase()
+      const normalizedStorageLocation = formData.storageLocation.trim().toLowerCase()
+      const matchingItems = items.filter(
+        (item) =>
+          item.status === activeTab &&
+          item.itemName?.trim().toLowerCase() === normalizedItemName &&
+          (item.storageLocation || '').trim().toLowerCase() === normalizedStorageLocation
+      )
+
+      if (matchingItems.length > 0) {
+        const [primaryItem, ...duplicateItems] = matchingItems
+        const combinedCount = matchingItems.reduce(
+          (total, item) => total + Number(item.itemCount || 0),
+          countNumber
+        )
+
+        await updateDoc(doc(db, 'inventoryItems', primaryItem.id), {
+          itemCount: combinedCount,
+          category: formData.category,
+          cost: Number.isFinite(costNumber) ? costNumber : 0,
+          department: formData.department.trim(),
+          course: formData.course.trim(),
+          vendor: formData.vendor.trim(),
+          requestedBy: formData.requestedBy.trim(),
+          orderedBy: formData.orderedBy.trim(),
+          pickupConfirmedBy: formData.pickupConfirmedBy.trim(),
+          notes: formData.notes.trim(),
+        })
+
+        await Promise.all(duplicateItems.map((item) => deleteDoc(doc(db, 'inventoryItems', item.id))))
+
+        clearForm()
+        setIsAddFormOpen(false)
+        setMessage('Matching items combined successfully.')
+        return
+      }
+
       await addDoc(collection(db, 'inventoryItems'), {
         itemName: formData.itemName.trim(),
         itemCount: countNumber,

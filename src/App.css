@@ -152,22 +152,26 @@
 }
 
 .add-form-modal {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: 1000;
   background: rgba(0, 0, 0, 0.35);
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  padding: 24px 16px;
+  overflow-y: auto;
 }
 
 .add-form {
   width: min(420px, 90%);
+  max-height: calc(100vh - 48px);
   background: #fff;
   border-radius: 10px;
   padding: 16px;
   display: grid;
   gap: 8px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+  overflow-y: auto;
 }
 
 .add-form h3 {
