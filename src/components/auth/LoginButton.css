@@ -1,0 +1,150 @@
+/* Login Button Styles */
+.login-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.login-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 24px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.login-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.login-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.login-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.login-button:focus {
+  outline: 2px solid #4285f4;
+  outline-offset: 2px;
+}
+
+/* Button variants */
+.login-button--primary {
+  /* Default styling, can be overridden by provider-specific styles */
+}
+
+.login-button--secondary {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+  border: 2px solid #ddd;
+}
+
+/* Provider-specific hover colors */
+.login-button--google:hover:not(:disabled) {
+  background-color: #3367d6 !important;
+}
+
+.login-button--facebook:hover:not(:disabled) {
+  background-color: #166fe5 !important;
+}
+
+.login-button--github:hover:not(:disabled) {
+  background-color: #1c2023 !important;
+}
+
+.login-button--microsoft:hover:not(:disabled) {
+  background-color: #106ebe !important;
+}
+
+/* Button content layout */
+.login-button__content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login-button__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.login-button__text {
+  font-weight: 500;
+}
+
+/* Loading state */
+.login-button__loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login-button__spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error state */
+.login-button__error {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.login-button__error-text {
+  color: #c33;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .login-button-container {
+    max-width: 100%;
+  }
+  
+  .login-button {
+    min-height: 44px;
+    font-size: 15px;
+  }
+  
+  .login-button__icon {
+    width: 18px;
+    height: 18px;
+  }
+}
