@@ -318,17 +318,12 @@ function App() {
         })
       }
 
-      // Update the restock request to Current status
-      await updateDoc(ref, {
-        status: 'Current',
-        pickupConfirmedBy: name,
-        pickupDate: serverTimestamp(),
-      })
-      // Log the pickup
+      // Log the pickup for the restock request and then remove it from active inventory.
       await logActivity('PICKUP_CONFIRMED', id, itemData.itemName, {
         pickedUpBy: name,
         quantity: itemData.itemCount,
       })
+      await deleteDoc(ref)
     } else {
       // Normal pickup confirmation
       await updateDoc(ref, {
