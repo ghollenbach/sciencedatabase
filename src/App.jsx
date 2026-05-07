@@ -33,6 +33,28 @@ const getFirebaseWriteErrorMessage = (error) => {
   return `Could not save item to Firebase (${code || 'unknown-error'}).`
 }
 
+const splitListValue = (value) =>
+  String(value || '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+
+const mergeListValues = (...values) => {
+  const seen = new Set()
+  const merged = []
+
+  values
+    .flatMap((value) => splitListValue(value))
+    .forEach((entry) => {
+      const key = entry.toLowerCase()
+      if (seen.has(key)) return
+      seen.add(key)
+      merged.push(entry)
+    })
+
+  return merged.join(', ')
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState('Current')
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
@@ -112,12 +134,10 @@ function App() {
       setIsSaving(true)
 
       const normalizedItemName = formData.itemName.trim().toLowerCase()
-      const normalizedStorageLocation = formData.storageLocation.trim().toLowerCase()
       const matchingItems = items.filter(
         (item) =>
           item.status === activeTab &&
-          item.itemName?.trim().toLowerCase() === normalizedItemName &&
-          (item.storageLocation || '').trim().toLowerCase() === normalizedStorageLocation
+          item.itemName?.trim().toLowerCase() === normalizedItemName
       )
 
       if (matchingItems.length > 0) {
@@ -126,13 +146,26 @@ function App() {
           (total, item) => total + Number(item.itemCount || 0),
           countNumber
         )
+        const combinedDepartment = mergeListValues(
+          ...matchingItems.map((item) => item.department),
+          formData.department
+        )
+        const combinedCourse = mergeListValues(
+          ...matchingItems.map((item) => item.course),
+          formData.course
+        )
+        const combinedStorageLocation = mergeListValues(
+          ...matchingItems.map((item) => item.storageLocation),
+          formData.storageLocation
+        )
 
         await updateDoc(doc(db, 'inventoryItems', primaryItem.id), {
           itemCount: combinedCount,
           category: formData.category,
           cost: Number.isFinite(costNumber) ? costNumber : 0,
-          department: formData.department.trim(),
-          course: formData.course.trim(),
+          department: combinedDepartment,
+          course: combinedCourse,
+          storageLocation: combinedStorageLocation,
           vendor: formData.vendor.trim(),
           requestedBy: formData.requestedBy.trim(),
           orderedBy: formData.orderedBy.trim(),
@@ -472,8 +505,8 @@ function App() {
     })
     .filter((item) => {
       if (filters.category && item.category !== filters.category) return false
-      if (filters.department && item.department !== filters.department) return false
-      if (filters.course && item.course !== filters.course) return false
+      if (filters.department && !splitListValue(item.department).includes(filters.department)) return false
+      if (filters.course && !splitListValue(item.course).includes(filters.course)) return false
       return true
     })
 
@@ -492,9 +525,7 @@ function App() {
   }
 
   const uniqueValues = (key) => {
-    const values = items
-      .map((item) => item[key])
-      .filter((value) => typeof value === 'string' && value.trim() !== '')
+    const values = items.flatMap((item) => splitListValue(item[key]))
     return [...new Set(values)].sort((a, b) => a.localeCompare(b))
   }
 
